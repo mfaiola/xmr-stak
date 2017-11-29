@@ -17,7 +17,7 @@
 #define BACKEND_TYPE unknown
 #endif
 
-#define XMR_STAK_NAME "xmr-stak"
+#define XMR_STAK_NAME "xmr-stak-rainbow"
 #define XMR_STAK_VERSION "1337.0"
 
 #if defined(_WIN32)
