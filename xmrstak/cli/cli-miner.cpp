@@ -86,9 +86,6 @@ void help()
 	cout<<"  -o, --url URL         pool url and port, e.g. pool.usxmrpool.com:3333"<<endl;
 	cout<<"  -u, --user USERNAME   pool user name or wallet address"<<endl;
 	cout<<"  -p, --pass PASSWD     pool password, in the most cases x or empty \"\""<<endl;
-	cout<<" \n"<<endl;
-	cout<< "Version: " << get_version_str_short() << endl;
-	cout<<"Brought to by fireice_uk and psychocrypt under GPLv3."<<endl;
 }
 
 bool read_yes_no(const char* str)
