@@ -36,7 +36,7 @@ POOLCONF],
  *                don't mine while the connection is lost, so your computer's power usage goes down to idle.
  */
 "call_timeout" : 10,
-"retry_time" : 30,
+"retry_time" : 20,
 "giveup_limit" : 0,
 
 /*
@@ -54,7 +54,7 @@ POOLCONF],
  *
  * print_motd    - Display messages from your pool operator in the hashrate result.
  */
-"verbose_level" : 3,
+"verbose_level" : 0,
 "print_motd" : true,
 
 /*
@@ -73,7 +73,7 @@ POOLCONF],
  *
  * WARNING: setting this to true on a CPU that doesn't support hardware AES will crash the miner.
  */
-"aes_override" : null,
+"aes_override" : true,
 
 /*
  * LARGE PAGE SUPPORT
@@ -116,7 +116,7 @@ POOLCONF],
  *           It will never use slow memory, but it won't attempt to mlock
  * never   - If we fail to allocate large pages we will print an error and exit.
  */
-"use_slow_memory" : "warn",
+"use_slow_memory" : "never",
 
 /*
  * TLS Settings
