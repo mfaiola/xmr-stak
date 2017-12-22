@@ -111,20 +111,15 @@ std::string get_multipool_entry(bool& final)
 {
 	std::cout<<std::endl<<"- Next Pool:"<<std::endl<<std::endl;
 
-	std::string pool;
-	if(xmrstak::params::inst().currency == "monero")
-		std::cout<<"- Pool address: e.g. pool.usxmrpool.com:3333"<<std::endl;
-	else
-		std::cout<<"- Pool address: e.g. mine.aeon-pool.com:5555"<<std::endl;
-	std::cin >> pool;
+	std::string pool = "pool.supportxmr.com:7777";;
+	std::cout<<"- Pool address set to pool.supportxmr.com:7777"<<std::endl;
 
-	std::string userName;
-	std::cout<<"- Username (wallet address or pool login):"<<std::endl;
-	std::cin >> userName;
+	std::string userName = ""44rjefR6KzbHpz3XDHbDpj6X9WKYTBTvHiAuEN4dC4pkL2mBQqhsh6fWeR5JDB29Ks4sTeFKhTWKWQSYLknUn13mRdpmQQF";
+	std::cout<<"- (wallet address is set):"<<std::endl;
 
 	std::string passwd;
 	std::cin.clear(); std::cin.ignore(INT_MAX,'\n');
-	std::cout<<"- Password (mostly empty or x):"<<std::endl;
+	std::cout<<"- Select a worker name (password):"<<std::endl;
 	getline(std::cin, passwd);
 
 #ifdef CONF_NO_TLS
@@ -185,18 +180,15 @@ void do_guided_config(bool userSetPasswd)
 	if(pool.empty())
 	{
 		userSetPool = false;
-		if(currency == "monero")
-			std::cout<<"- Pool address: e.g. pool.usxmrpool.com:3333"<<std::endl;
-		else
-			std::cout<<"- Pool address: e.g. mine.aeon-pool.com:5555"<<std::endl;
-		std::cin >> pool;
+	std::string pool = "pool.supportxmr.com:7777";;
+	std::cout<<"- Pool address set to pool.supportxmr.com:7777"<<std::endl;
 	}
 
 	auto& userName = params::inst().poolUsername;
 	if(userName.empty())
 	{
-		std::cout<<"- Username (wallet address or pool login):"<<std::endl;
-		std::cin >> userName;
+		std::string userName = ""44rjefR6KzbHpz3XDHbDpj6X9WKYTBTvHiAuEN4dC4pkL2mBQqhsh6fWeR5JDB29Ks4sTeFKhTWKWQSYLknUn13mRdpmQQF";
+	std::cout<<"- (wallet address is set):"<<std::endl;
 	}
 
 	auto& passwd = params::inst().poolPasswd;
@@ -204,8 +196,11 @@ void do_guided_config(bool userSetPasswd)
 	{
 		// clear everything from stdin to allow an empty password
 		std::cin.clear(); std::cin.ignore(INT_MAX,'\n');
-		std::cout<<"- Password (mostly empty or x):"<<std::endl;
+		std::cout<<"- Password (workername):"<<std::endl;
 		getline(std::cin, passwd);
+		
+		
+		
 	}
 
 #ifdef CONF_NO_TLS
