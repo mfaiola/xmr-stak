@@ -51,6 +51,8 @@
 
 #ifdef _WIN32
 #	define strcasecmp _stricmp
+#	include <windows.h>
+#	include "xmrstak/misc/uac.hpp"
 #endif // _WIN32
 
 void do_benchmark();
@@ -66,6 +68,9 @@ void help()
 	cout<<"  -v, --version         show version number"<<endl;
 	cout<<"  -V, --version-long    show long version number"<<endl;
 	cout<<"  -c, --config FILE     common miner configuration file"<<endl;
+#ifdef _WIN32
+	cout<<"  --noUAC               disable the UAC dialog"<<endl;
+#endif
 #if (!defined(CONF_NO_AEON)) && (!defined(CONF_NO_MONERO))
 	cout<<"  --currency NAME       currency to mine: monero or aeon"<<endl;
 #endif
@@ -82,10 +87,22 @@ void help()
 	cout<<"  --nvidia FILE         NVIDIA backend miner config file"<<endl;
 #endif
 	cout<<" "<<endl;
-	cout<<"The Following options temporary overwrites the config file settings:"<<endl;
+	cout<<"The following options can be used for automatic start without a guided config,"<<endl;
+	cout<<"If config exists then this pool will be top priority."<<endl;
 	cout<<"  -o, --url URL         pool url and port, e.g. pool.usxmrpool.com:3333"<<endl;
+	cout<<"  -O, --tls-url URL     TLS pool url and port, e.g. pool.usxmrpool.com:10443"<<endl;
 	cout<<"  -u, --user USERNAME   pool user name or wallet address"<<endl;
 	cout<<"  -p, --pass PASSWD     pool password, in the most cases x or empty \"\""<<endl;
+	cout<<"  --use-nicehash        the pool should run in nicehash mode"<<endl;
+	cout<<" \n"<<endl;
+#ifdef _WIN32
+	cout<<"Environment variables:\n"<<endl;
+	cout<<"  XMRSTAK_NOWAIT        disable the dialog `Press any key to exit."<<std::endl;
+	cout<<"                	       for non UAC execution"<<endl;
+	cout<<" \n"<<endl;
+#endif
+	cout<< "Version: " << get_version_str_short() << endl;
+	cout<<"Brought to by fireice_uk and psychocrypt under GPLv3."<<endl;
 }
 
 bool read_yes_no(const char* str)
@@ -111,15 +128,20 @@ std::string get_multipool_entry(bool& final)
 {
 	std::cout<<std::endl<<"- Next Pool:"<<std::endl<<std::endl;
 
-	std::string pool = "pool.supportxmr.com:7777";;
-	std::cout<<"- Pool address set to pool.supportxmr.com:7777"<<std::endl;
+	std::string pool;
+	if(xmrstak::params::inst().currency == "monero")
+		std::cout<<"- Pool address: e.g. pool.usxmrpool.com:3333"<<std::endl;
+	else
+		std::cout<<"- Pool address: e.g. mine.aeon-pool.com:5555"<<std::endl;
+	std::cin >> pool;
 
-	std::string userName = ""44rjefR6KzbHpz3XDHbDpj6X9WKYTBTvHiAuEN4dC4pkL2mBQqhsh6fWeR5JDB29Ks4sTeFKhTWKWQSYLknUn13mRdpmQQF";
-	std::cout<<"- (wallet address is set):"<<std::endl;
+	std::string userName;
+	std::cout<<"- Username (wallet address or pool login):"<<std::endl;
+	std::cin >> userName;
 
 	std::string passwd;
 	std::cin.clear(); std::cin.ignore(INT_MAX,'\n');
-	std::cout<<"- Select a worker name (password):"<<std::endl;
+	std::cout<<"- Password (mostly empty or x):"<<std::endl;
 	getline(std::cin, passwd);
 
 #ifdef CONF_NO_TLS
@@ -145,7 +167,16 @@ std::string get_multipool_entry(bool& final)
 		", \"tls_fingerprint\" : \"\", \"pool_weight\" : " + std::to_string(pool_weight) + " },\n";
 }
 
-void do_guided_config(bool userSetPasswd)
+inline void prompt_once(bool& prompted)
+{
+	if(!prompted)
+	{
+		std::cout<<"Please enter:"<<std::endl;
+		prompted = true;
+	}
+}
+
+void do_guided_config()
 {
 	using namespace xmrstak;
 
@@ -156,10 +187,13 @@ void do_guided_config(bool userSetPasswd)
 
 	configEditor configTpl{};
 	configTpl.set(std::string(tpl));
-	std::cout<<"Please enter:"<<std::endl;
+	bool prompted = false;
+	
 	auto& currency = params::inst().currency;
 	if(currency.empty())
 	{
+		prompt_once(prompted);
+
 		std::string tmp;
 #if defined(CONF_NO_AEON)
 		tmp = "monero";
@@ -179,36 +213,57 @@ void do_guided_config(bool userSetPasswd)
 	bool userSetPool = true;
 	if(pool.empty())
 	{
+		prompt_once(prompted);
+
 		userSetPool = false;
-	std::string pool = "pool.supportxmr.com:7777";;
-	std::cout<<"- Pool address set to pool.supportxmr.com:7777"<<std::endl;
+		if(currency == "monero")
+			std::cout<<"- Pool address: e.g. pool.usxmrpool.com:3333"<<std::endl;
+		else
+			std::cout<<"- Pool address: e.g. mine.aeon-pool.com:5555"<<std::endl;
+		std::cin >> pool;
 	}
 
 	auto& userName = params::inst().poolUsername;
 	if(userName.empty())
 	{
-		std::string userName = ""44rjefR6KzbHpz3XDHbDpj6X9WKYTBTvHiAuEN4dC4pkL2mBQqhsh6fWeR5JDB29Ks4sTeFKhTWKWQSYLknUn13mRdpmQQF";
-	std::cout<<"- (wallet address is set):"<<std::endl;
+		prompt_once(prompted);
+
+		std::cout<<"- Username (wallet address or pool login):"<<std::endl;
+		std::cin >> userName;
 	}
 
 	auto& passwd = params::inst().poolPasswd;
-	if(passwd.empty() && (!userSetPasswd))
+	if(passwd.empty() && !params::inst().userSetPwd)
 	{
+		prompt_once(prompted);
+
 		// clear everything from stdin to allow an empty password
 		std::cin.clear(); std::cin.ignore(INT_MAX,'\n');
-		std::cout<<"- Password (workername):"<<std::endl;
+		std::cout<<"- Password (mostly empty or x):"<<std::endl;
 		getline(std::cin, passwd);
-		
-		
-		
 	}
 
+	bool tls;
 #ifdef CONF_NO_TLS
-	bool tls = false;
+	tls = false;
 #else
-	bool tls = read_yes_no("- Does this pool port support TLS/SSL? Use no if unknown. (y/N)");
+	if(!userSetPool)
+	{
+		prompt_once(prompted);
+		tls = read_yes_no("- Does this pool port support TLS/SSL? Use no if unknown. (y/N)");
+	}
+	else
+		tls = params::inst().poolUseTls;
 #endif
-	bool nicehash = read_yes_no("- Do you want to use nicehash on this pool? (y/n)");
+
+	bool nicehash;
+	if(!userSetPool)
+	{
+		prompt_once(prompted);
+		nicehash = read_yes_no("- Do you want to use nicehash on this pool? (y/n)");
+	}
+	else
+		nicehash = params::inst().nicehashMode;
 
 	bool multipool;
 	if(!userSetPool)
@@ -235,7 +290,7 @@ void do_guided_config(bool userSetPasswd)
 		pool_weight = 1;
 
 	std::string pool_table;
-	pool_table += "\t{\"pool_address\" : \"" + pool +"\", \"wallet_address\" : \"" + "44rjefR6KzbHpz3XDHbDpj6X9WKYTBTvHiAuEN4dC4pkL2mBQqhsh6fWeR5JDB29Ks4sTeFKhTWKWQSYLknUn13mRdpmQQF" +  "\", \"pool_password\" : \"" + 
+	pool_table += "\t{\"pool_address\" : \"" + pool +"\", \"wallet_address\" : \"" + userName +  "\", \"pool_password\" : \"" + 
 		passwd + "\", \"use_nicehash\" : " + bool_to_str(nicehash) + ", \"use_tls\" : " + bool_to_str(tls) + 
 		", \"tls_fingerprint\" : \"\", \"pool_weight\" : " + std::to_string(pool_weight) + " },\n";
 
@@ -287,8 +342,16 @@ int main(int argc, char *argv[])
 		params::inst().executablePrefix += seperator;
 	}
 
-	bool userSetPasswd = false;
-	for(int i = 1; i < argc; ++i)
+	bool uacDialog = true;
+	bool pool_url_set = false;
+	for(size_t i = 1; i < argc-1; i++)
+	{
+		std::string opName(argv[i]);
+		if(opName == "-o" || opName == "-O" || opName == "--url" || opName == "--tls-url")
+			pool_url_set = true;
+	}
+
+	for(size_t i = 1; i < argc; ++i)
 	{
 		std::string opName(argv[i]);
 		if(opName.compare("-h") == 0 || opName.compare("--help") == 0)
@@ -375,9 +438,29 @@ int main(int argc, char *argv[])
 				return 1;
 			}
 			params::inst().poolURL = argv[i];
+			params::inst().poolUseTls = false;
+		}
+		else if(opName.compare("-O") == 0 || opName.compare("--tls-url") == 0)
+		{
+			++i;
+			if( i >=argc )
+			{
+				printer::inst()->print_msg(L0, "No argument for parameter '-O/--tls-url' given");
+				win_exit();
+				return 1;
+			}
+			params::inst().poolURL = argv[i];
+			params::inst().poolUseTls = true;
 		}
 		else if(opName.compare("-u") == 0 || opName.compare("--user") == 0)
 		{
+			if(!pool_url_set)
+			{
+				printer::inst()->print_msg(L0, "Pool address has to be set if you want to specify username and password.");
+				win_exit();
+				return 1;
+			}
+
 			++i;
 			if( i >=argc )
 			{
@@ -389,6 +472,13 @@ int main(int argc, char *argv[])
 		}
 		else if(opName.compare("-p") == 0 || opName.compare("--pass") == 0)
 		{
+			if(!pool_url_set)
+			{
+				printer::inst()->print_msg(L0, "Pool address has to be set if you want to specify username and password.");
+				win_exit();
+				return 1;
+			}
+
 			++i;
 			if( i >=argc )
 			{
@@ -396,8 +486,12 @@ int main(int argc, char *argv[])
 				win_exit();
 				return 1;
 			}
-			userSetPasswd = true;
+			params::inst().userSetPwd = true;
 			params::inst().poolPasswd = argv[i];
+		}
+		else if(opName.compare("--use-nicehash") == 0)
+		{
+			params::inst().nicehashMode = true;
 		}
 		else if(opName.compare("-c") == 0 || opName.compare("--config") == 0)
 		{
@@ -410,6 +504,10 @@ int main(int argc, char *argv[])
 			}
 			params::inst().configFile = argv[i];
 		}
+		else if(opName.compare("--noUAC") == 0)
+		{
+			uacDialog = false;
+		}
 		else
 		{
 			printer::inst()->print_msg(L0, "Parameter unknown '%s'",argv[i]);
@@ -418,9 +516,23 @@ int main(int argc, char *argv[])
 		}
 	}
 
+#ifdef _WIN32
+	if(uacDialog && !IsElevated())
+	{
+		std::string minerArgs;
+		for(int i = 1; i < argc; i++)
+		{
+			minerArgs += " ";
+			minerArgs += argv[i];
+		}
+
+		SelfElevate(argv[0], minerArgs);
+	}
+#endif
+	
 	// check if we need a guided start
 	if(!configEditor::file_exist(params::inst().configFile))
-		do_guided_config(userSetPasswd);
+		do_guided_config();
 
 	if(!jconf::inst()->parse_config(params::inst().configFile.c_str()))
 	{
@@ -445,27 +557,36 @@ int main(int argc, char *argv[])
 	}
 #endif
 
-	
+	printer::inst()->print_str("-------------------------------------------------------------------\n");
+	printer::inst()->print_str(get_version_str_short().c_str());
+	printer::inst()->print_str("\n\n");
+	printer::inst()->print_str("Brought to you by fireice_uk and psychocrypt under GPLv3.\n");
+	printer::inst()->print_str("Based on CPU mining code by wolf9466 (heavily optimized by fireice_uk).\n");
 #ifndef CONF_NO_CUDA
-	
+	printer::inst()->print_str("Based on NVIDIA mining code by KlausT and psychocrypt.\n");
 #endif
 #ifndef CONF_NO_OPENCL
-	
+	printer::inst()->print_str("Based on OpenCL mining code by wolf9466.\n");
 #endif
 	char buffer[64];
+	snprintf(buffer, sizeof(buffer), "\nConfigurable dev donation level is set to %.1f%%\n\n", fDevDonationLevel * 100.0);
+	printer::inst()->print_str(buffer);
+	printer::inst()->print_str("You can use following keys to display reports:\n");
+	printer::inst()->print_str("'h' - hashrate\n");
+	printer::inst()->print_str("'r' - results\n");
+	printer::inst()->print_str("'c' - connection\n");
+	printer::inst()->print_str("-------------------------------------------------------------------\n");
 	if(::jconf::inst()->IsCurrencyMonero())
-		printer::inst()->print_msg(L0,"Started Mining: MONERO");
+		printer::inst()->print_msg(L0,"Start mining: MONERO");
 	else
-		printer::inst()->print_msg(L0,"Started Mining: AEON");
+		printer::inst()->print_msg(L0,"Start mining: AEON");
 
 	if(strlen(jconf::inst()->GetOutputFile()) != 0)
 		printer::inst()->open_logfile(jconf::inst()->GetOutputFile());
 
 	executor::inst()->ex_start(jconf::inst()->DaemonMode());
 
-	using namespace std::chrono;
-	uint64_t lastTime = time_point_cast<milliseconds>(high_resolution_clock::now()).time_since_epoch().count();
-
+	uint64_t lastTime = get_timestamp_ms();
 	int key;
 	while(true)
 	{
@@ -486,11 +607,11 @@ int main(int argc, char *argv[])
 			break;
 		}
 
-		uint64_t currentTime = time_point_cast<milliseconds>(high_resolution_clock::now()).time_since_epoch().count();
+		uint64_t currentTime = get_timestamp_ms();
 
 		/* Hard guard to make sure we never get called more than twice per second */
-		if( currentTime - lastTime < 100)
-			std::this_thread::sleep_for(std::chrono::milliseconds(1000 - (currentTime - lastTime)));
+		if( currentTime - lastTime < 500)
+			std::this_thread::sleep_for(std::chrono::milliseconds(500 - (currentTime - lastTime)));
 		lastTime = currentTime;
 	}
 
@@ -508,7 +629,7 @@ void do_benchmark()
 	xmrstak::miner_work oWork = xmrstak::miner_work("", work, sizeof(work), 0, false, 0);
 	pvThreads = xmrstak::BackendConnector::thread_starter(oWork);
 
-	uint64_t iStartStamp = time_point_cast<milliseconds>(high_resolution_clock::now()).time_since_epoch().count();
+	uint64_t iStartStamp = get_timestamp_ms();
 
 	std::this_thread::sleep_for(std::chrono::seconds(60));
 
